@@ -99,7 +99,7 @@ stages:
             displayName: 'Azure App Service Deploy: website'
             inputs:
               azureSubscription: 'SpaceWeb-Deploy'
-              appName: '$(WebAppNameDev)'
+              appName: 'space-web-test.azurewebsites.net'
               package: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
               appType: webApp
 - stage: 'Test'
