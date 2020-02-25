@@ -4,6 +4,13 @@ trigger:
 variables:
   buildConfiguration: 'Release'
   releaseBranchName: 'release'
+schedules:
+  - cron: '0 12 * * *'
+    displayName: 'Deploy at 12 pm every day'
+    branches:
+      include:
+        - release
+    always: false
 
 stages:
 - stage: 'Build'
@@ -95,3 +102,34 @@ stages:
               appName: '$(WebAppNameDev)'
               package: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
               appType: webApp
+- stage: 'Test'
+  displayName: 'Deploy the test web application'
+  dependsOn: 'Dev'
+  condition: |
+    and
+    (
+      succeeded(),
+      eq(variables['Build.Reason'], 'Schedule')
+    )
+  jobs:
+    - deployment: Deploy
+      pool:
+        vmImage: 'ubuntu-16.04'
+      environment: 'Test'
+      variables:
+        - group: Release
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+              - download: current
+                artifact: drop
+              - task: AzureWebApp@1
+                displayName: 'Deploy to Azure Service Plan'
+                inputs:
+                  appName: '$(WebAppNameTest)'
+                  azureSubscription: 'SpaceWeb-Deploy'
+                  appType: webApp
+                  deploymentMethod: zipDeploy
+                  package: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
+
