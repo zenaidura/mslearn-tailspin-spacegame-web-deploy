@@ -99,12 +99,11 @@ stages:
             displayName: 'Azure App Service Deploy: website'
             inputs:
               azureSubscription: 'SpaceWeb-Deploy'
-              appName: 'space-web-test.azurewebsites.net'
+              appName: '$(WebAppNameDev)'
               package: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
               appType: webApp
 - stage: 'Test'
   displayName: 'Deploy the test web application'
-  dependsOn: 'Dev'
   condition: |
     and
     (
@@ -128,6 +127,29 @@ stages:
                 displayName: 'Deploy to Azure Service Plan'
                 inputs:
                   appName: '$(WebAppNameTest)'
+                  azureSubscription: 'SpaceWeb-Deploy'
+                  appType: webApp
+                  deploymentMethod: zipDeploy
+                  package: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
+- stage: 'Staging'
+  displayName: 'Deploy the staging web application'
+  jobs:
+    - deployment: Deploy
+      pool:
+        vmImage: 'ubuntu-16.04'
+      environment: 'Staging'
+      variables:
+        - group: Release
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+              - download: current
+                artifact: drop
+              - task: AzureWebApp@1
+                displayName: 'Deploy to Azure Service Plan'
+                inputs:
+                  appName: '$(WebAppNameStaging)'
                   azureSubscription: 'SpaceWeb-Deploy'
                   appType: webApp
                   deploymentMethod: zipDeploy
